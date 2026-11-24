@@ -1,8 +1,10 @@
+%%writefile app.py
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import streamlit as st
+from io import BytesIO
 
 st.set_page_config(page_title='Weather and Wait Times for Uber and Lyft', layout='wide')
 
@@ -60,6 +62,22 @@ def summarize_all_months(data):
         months_used=('month','nunique')
     ))
 
+def show_chart(fig):
+    buffer = BytesIO()
+    fig.patch.set_alpha(1)
+    fig.savefig(
+        buffer, format='png', dpi=300, bbox_inches='tight',transparent=False, facecolor='white'
+    )
+    fig.patch.set_alpha(0)
+    st.pyplot(fig, bbox_inches='tight')
+    st.download_button(
+        label='Download chart',
+        data=buffer.getvalue(),
+        file_name='weather_wait_chart.png',
+        mime='image/png')
+    plt.close(fig)
+    
+
 def style(fig, axes):
     fig.patch.set_alpha(0)
     ax_list = axes.ravel() if isinstance(axes, np.ndarray) else [axes]
@@ -85,8 +103,7 @@ def box_chart(trips, month, platform, pickup_zone):
     ax.set_ylabel('Wait Time (minutes)')
     ax.set_title(f'{pickup_zone} | {platform} | Month {month}')
     style(fig, ax)
-    st.pyplot(fig, bbox_inches='tight')
-    plt.close(fig)
+    show_chart(fig)
     st.caption('Whiskers show the 10th and 90th percentiles.')
     
 
@@ -127,8 +144,7 @@ def comparison_chart(selected, view, metric, all_results):
             frameon=False,
         )
     style(fig, ax)
-    st.pyplot(fig, bbox_inches='tight')
-    plt.close(fig)
+    show_chart(fig)
 
 def cross_zone_period_bars(case, month, platform):
     zones = list(dict.fromkeys(case['pickup_zone']))
@@ -165,8 +181,7 @@ def cross_zone_period_bars(case, month, platform):
         y=1.02
     )
     style(fig, axes)
-    st.pyplot(fig, bbox_inches='tight')
-    plt.close(fig)
+    show_chart(fig)
 
 def cross_zone_period_heatmap(case, metric, metric_label, month, platform, all_period):
     pivot_df = case.pivot(
@@ -185,8 +200,7 @@ def cross_zone_period_heatmap(case, metric, metric_label, month, platform, all_p
     ax.set_xlabel('Request period')
     ax.set_ylabel('Pickup zone')
     style(fig, ax)
-    st.pyplot(fig, bbox_inches='tight')
-    plt.close(fig)    
+    show_chart(fig)    
 
 
 results = load_results()
